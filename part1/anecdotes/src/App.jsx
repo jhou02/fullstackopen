@@ -8,10 +8,11 @@ const Button = (props) => (
 
 const Anecdote = (props) => {
   return (
-    <div>
+    <>
+      <h2>Anecdote of the day</h2>
       <div>{props.text}</div>
       <div>has {props.votes}</div>
-    </div>
+    </>
   )
 }
 
@@ -25,11 +26,11 @@ const Popular = (props) => {
   console.log("most popular is", popular)
 
   return(
-    <div>
+    <>
+      <h2>Anecdote with most votes</h2>
       <div>{popular}</div>
       <div>has {mostVotes} votes</div>
-    </div>
-
+    </>
   )
 }
 
@@ -46,7 +47,7 @@ const App = () => {
   ]
    
   const [selected, setSelected] = useState(0)
-  const [votes, setVotes] = useState(Array(8).fill(0))
+  const [votes, setVotes] = useState(Array(anecdotes.length).fill(0))
 
   const randomizeSelected = () => {
     let random = Math.floor(Math.random() * anecdotes.length)
@@ -63,11 +64,9 @@ const App = () => {
 
   return (
     <div>
-      <h2>Anecdote of the day</h2>
       <Anecdote text={anecdotes[selected]} votes={votes[selected]}/>
       <Button handleClick={handleVotes} text="vote"/>
       <Button handleClick={randomizeSelected} text="next anecdote"/>
-      <h2>Anecdote with most votes</h2>
       <Popular votes={votes} anecdotes={anecdotes}/>
     </div>
   )
