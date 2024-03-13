@@ -1,22 +1,25 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import phonebookService from './services/phonebook'
 
 const Person = (props) => {
   return (
     <div>
-      {props.name} {props.number}
+      {props.name} {props.number} <button>delete</button>
     </div>
   )
 }
 
-const Persons = ({ persons, filter }) => {
+const Persons = ({ persons, filter, deletePerson }) => {
+  console.log('persons list:', persons)
   const filteredPersons = persons.filter(person => person.name.toLowerCase().includes(filter.toLowerCase()))
   return(
     <div>
         {filteredPersons.map(person => <Person 
           key={person.name} 
           name={person.name} 
-          number={person.number}/>)}
+          number={person.number}
+          deletePerson={deletePerson}
+        /> )}
       </div>
   )
 }
@@ -36,19 +39,43 @@ const Filter = (props) => {
 }
 
 const PersonForm = (props) => {
+  const [newName, setNewName] = useState('')
+  const [newNumber, setNewNumber] = useState('')
+
+  const handleNameChange = (event) => {
+    console.log(event.target.value)
+    setNewName(event.target.value)
+  }
+
+  const handleNumberChange = (event) => {
+    console.log(event.target.value)
+    setNewNumber(event.target.value)
+  }
+
+  const personObject = {
+      name: newName,
+      number: newNumber
+    }
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    props.addPerson(personObject)
+    setNewName('')
+    setNewNumber('')
+  }
+
   console.log('person form props: ', props)
   return (
-    <form onSubmit={props.addPerson}>
+    <form onSubmit={handleSubmit}>
     <div>
       name: <input 
-      value={props.newName}
-      onChange={props.handleNameChange}
+      value={newName}
+      onChange={handleNameChange}
       />
     </div>
     <div>
       number: <input
-      value={props.newNumber}
-      onChange={props.handleNumberChange}
+      value={newNumber}
+      onChange={handleNumberChange}
       />
     </div>
     <div>
@@ -60,53 +87,48 @@ const PersonForm = (props) => {
 
 const App = () => {
   const [persons, setPersons] = useState([])
-  const [newName, setNewName] = useState('')
-  const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
 
   const hook = () => {
     console.log('effect')
-    axios.get('http://localhost:3001/persons')
-    .then(response => {
+    phonebookService.getAll()
+    .then(initialPersons => {
       console.log('promise fulfilled')
-      setPersons(response.data)
+      setPersons(initialPersons)
     })
   }
 
   useEffect(hook, [])
 
-  const addPerson = (event) => {
-    event.preventDefault()
+  const addPerson = (person) => {
     const names = persons.map(person=>person.name)
     const numbers = persons.map(person=>person.number)
-    const containedName = names.indexOf(newName)
-    const containedNumber = numbers.indexOf(newNumber)
+    const containedName = names.indexOf(person.name)
+    const containedNumber = numbers.indexOf(person.number)
     if(containedName != -1) {
-      alert(`${newName} is already added to phonebook`)
+      alert(`${person.name} is already added to phonebook`)
       return
     }
     if(containedNumber != -1) {
-      alert(`${newNumber} is already assigned to a person`)
+      alert(`${person.number} is already assigned to a person`)
       return
     }
-    const personObject = {
-      name: newName,
-      number: newNumber
+
+    phonebookService.createPerson({...person, id:persons.length+1})
+      .then(returnedNote => {
+        setPersons(persons.concat(returnedNote))
+      })
+        
+  }
+
+  const deletePerson = (name) => {
+    if(window.confirm(`Are you sure you want to delete ${name}`)) {
+      const personObject = persons.find((person) => person.name === name)
+      phonebookService
+        .deletePerson(personObject.id, personObject)
+        .then(console.log('deleted ', name))
     }
-
-    setPersons(persons.concat(personObject))
-    setNewName('')
-    setNewNumber('')
-  }
-
-  const handleNameChange = (event) => {
-    console.log(event.target.value)
-    setNewName(event.target.value)
-  }
-
-  const handleNumberChange = (event) => {
-    console.log(event.target.value)
-    setNewNumber(event.target.value)
+    
   }
 
   const handleFilterChange = (event) => {
@@ -119,15 +141,9 @@ const App = () => {
       <h2>Phonebook</h2>
         <Filter filter={filter} handleFilter={handleFilterChange}/>
       <h2>add a new</h2>
-        <PersonForm addPerson={addPerson} 
-                    newName={newName} 
-                    newNumber={newNumber} 
-                    handleNameChange={handleNameChange} 
-                    handleNumberChange={handleNumberChange}
-        />
-
+        <PersonForm addPerson={addPerson} />
       <h2>Numbers</h2>
-        <Persons persons={persons} filter={filter}/>
+        <Persons persons={persons} filter={filter} deletePerson={deletePerson}/>
     </div>
   )
 }
