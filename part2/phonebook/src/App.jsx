@@ -1,10 +1,16 @@
 import { useState, useEffect } from 'react'
 import phonebookService from './services/phonebook'
+import './index.css'
 
-const Person = (props) => {
+const Person = ({ person, deletePerson }) => {
+  const handleDelete = () => {
+    if (window.confirm(`Are you sure you want to delete ${person.name}?`)) {
+      deletePerson(person.id, person.name);
+    }
+  };
   return (
     <div>
-      {props.name} {props.number} <button>delete</button>
+      {person.name} {person.number} <button onClick={handleDelete}>delete</button>
     </div>
   )
 }
@@ -16,8 +22,7 @@ const Persons = ({ persons, filter, deletePerson }) => {
     <div>
         {filteredPersons.map(person => <Person 
           key={person.name} 
-          name={person.name} 
-          number={person.number}
+          person={person}
           deletePerson={deletePerson}
         /> )}
       </div>
@@ -85,13 +90,26 @@ const PersonForm = (props) => {
   )
 }
 
+const Notification = ({message, className}) => {
+  if(message === null) {
+    return null
+  }
+  
+  return (<div className={className}>
+    {message}
+  </div>)
+}
+
+
 const App = () => {
   const [persons, setPersons] = useState([])
   const [filter, setFilter] = useState('')
+  const [statusMessage, setStatusMessage] = useState(null)
+  const [notifClass, setNotifClass] = useState("success")
 
   const hook = () => {
     console.log('effect')
-    phonebookService.getAll()
+    phonebookService.getPersons()
     .then(initialPersons => {
       console.log('promise fulfilled')
       setPersons(initialPersons)
@@ -102,33 +120,66 @@ const App = () => {
 
   const addPerson = (person) => {
     const names = persons.map(person=>person.name)
-    const numbers = persons.map(person=>person.number)
     const containedName = names.indexOf(person.name)
-    const containedNumber = numbers.indexOf(person.number)
+
     if(containedName != -1) {
-      alert(`${person.name} is already added to phonebook`)
-      return
-    }
-    if(containedNumber != -1) {
-      alert(`${person.number} is already assigned to a person`)
+      updatePerson(person)
       return
     }
 
-    phonebookService.createPerson({...person, id:persons.length+1})
+    const newPerson = {...person}
+    newPerson.id = `${persons.length+1}`
+    console.log(newPerson)
+    phonebookService.createPerson(newPerson)
       .then(returnedNote => {
+        setStatusMessage(`Added ${newPerson.name}`)
+        setTimeout(() => {
+          setStatusMessage(null)
+        }, 5000)
         setPersons(persons.concat(returnedNote))
       })
         
   }
 
-  const deletePerson = (name) => {
-    if(window.confirm(`Are you sure you want to delete ${name}`)) {
-      const personObject = persons.find((person) => person.name === name)
+  const deletePerson = (id, name) => {
+    phonebookService
+      .deletePerson(id)
+      .then(() => 
+        {
+        setStatusMessage(`Deleted ${name}`)
+        setTimeout(() => {
+          setStatusMessage(null)
+        }, 5000)
+        setPersons(persons.filter(person => person.id !== id))
+      })
+  }
+
+  const updatePerson = (person) => {
+    if(window.confirm(`${person.name} is already added to the phonebook, replace the old number with a new one?`)) {
+      const personObject = persons.find(n => n.name === person.name)
+      const updatedPerson = {...personObject, number:`${person.number}`}
       phonebookService
-        .deletePerson(personObject.id, personObject)
-        .then(console.log('deleted ', name))
+        .updatePerson(personObject.id, updatedPerson)
+        .then(returnedPerson => {
+          setStatusMessage(`Updated ${returnedPerson.name}`)
+          setTimeout(() => {
+            setStatusMessage(null)
+          }, 5000)
+          setPersons((prevState) => {
+            return prevState.map((person) =>
+             person.id !== personObject.id ? person: returnedPerson)
+          })
+        })
+        .catch(error => {
+          setNotifClass("error")
+          setStatusMessage(`Information of ${person.name} was already deleted from the server`)
+          setTimeout(() => {
+            setStatusMessage(null)
+            setNotifClass("success")
+          }, 5000)
+          setPersons(persons.filter(p => p.id !== person.id))
+        })
     }
-    
   }
 
   const handleFilterChange = (event) => {
@@ -139,11 +190,14 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
-        <Filter filter={filter} handleFilter={handleFilterChange}/>
-      <h2>add a new</h2>
-        <PersonForm addPerson={addPerson} />
-      <h2>Numbers</h2>
-        <Persons persons={persons} filter={filter} deletePerson={deletePerson}/>
+      <Notification message={statusMessage} className={notifClass}/>
+        <div>
+          <Filter filter={filter} handleFilter={handleFilterChange}/>
+        <h2>add a new</h2>
+          <PersonForm addPerson={addPerson} />
+        <h2>Numbers</h2>
+          <Persons persons={persons} filter={filter} deletePerson={deletePerson}/>
+        </div>
     </div>
   )
 }
