@@ -1,0 +1,7 @@
+POST https://fsopart3-f294.onrender.com/api/persons
+Content-Type: application/json
+
+{
+    "name": "jonathan",
+    "number": "69420"
+}

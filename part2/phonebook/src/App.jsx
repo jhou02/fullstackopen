@@ -138,6 +138,14 @@ const App = () => {
         }, 5000)
         setPersons(persons.concat(returnedNote))
       })
+      .catch(error => {
+        setNotifClass("error")
+        setStatusMessage(`Error: ${error.response.data.error}`)
+        setTimeout(() => {
+          setStatusMessage(null)
+          setNotifClass('success')
+        }, 5000)
+      })
         
   }
 
@@ -152,6 +160,14 @@ const App = () => {
         }, 5000)
         setPersons(persons.filter(person => person.id !== id))
       })
+      .catch(() => {
+        setNotifClass('error')
+        setStatusMessage(`Error: ${name} has already been deleted`)
+        setTimeout(() => {
+          setStatusMessage(null)
+          setNotifClass('success')
+        }, 5000)
+      })
   }
 
   const updatePerson = (person) => {
@@ -164,6 +180,7 @@ const App = () => {
           setStatusMessage(`Updated ${returnedPerson.name}`)
           setTimeout(() => {
             setStatusMessage(null)
+            setNotifClass('sucess')
           }, 5000)
           setPersons((prevState) => {
             return prevState.map((person) =>
@@ -171,13 +188,11 @@ const App = () => {
           })
         })
         .catch(error => {
-          setNotifClass("error")
-          setStatusMessage(`Information of ${person.name} was already deleted from the server`)
+          setNotifClass('error')
+          setStatusMessage(`Error: ${error.response.data.error}`)
           setTimeout(() => {
             setStatusMessage(null)
-            setNotifClass("success")
           }, 5000)
-          setPersons(persons.filter(p => p.id !== person.id))
         })
     }
   }
