@@ -1,0 +1,10 @@
+POST http://localhost:3003/api/blogs
+Content-Type: application/json
+
+{
+    "title": "Dragon Ball",
+    "author": "Akira Toriyama",
+    "url":"shonenjump.com",
+    "likes": "9001"
+
+}
