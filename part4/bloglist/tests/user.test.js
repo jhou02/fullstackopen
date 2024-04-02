@@ -21,7 +21,7 @@ describe('when there is literally one user in db', () => {
 		await user.save()
 	})
 
-	test.only('creation succeeds with a fresh username', async () => {
+	test('creation succeeds with a fresh username', async () => {
 		const usersAtStart = await helper.usersInDb()
 
 		const newUser = {
@@ -43,7 +43,7 @@ describe('when there is literally one user in db', () => {
 		assert(usernames.includes(newUser.username))
 	})
 
-	test.only('creation fails with an duplicate username', async () => {
+	test('creation fails with an duplicate username', async () => {
 		const usersAtStart = await helper.usersInDb()
 
 		const dupeUser = {
@@ -51,21 +51,18 @@ describe('when there is literally one user in db', () => {
 			name: 'wrong',
 			password: 'invalid',
 		}
-		try {
-			await api
-				.post('/api/users')
-				.send(dupeUser)
-				.expect(400)
-				.expect('Content-Type', /application\/json/)
-		} catch (exception) {
-			console.log('duplicate error', exception)
-		}
+
+		await api
+			.post('/api/users')
+			.send(dupeUser)
+			.expect(400)
+			.expect('Content-Type', /application\/json/)
 
 		const usersAtEnd = await helper.usersInDb()
 		assert.strictEqual(usersAtEnd.length, usersAtStart.length)
 	})
 
-	test.only('creation fails with a username shorter than 3 characters', async () => {
+	test('creation fails with a username shorter than 3 characters', async () => {
 		const usersAtStart = await helper.usersInDb()
 
 		const shortUser = {
