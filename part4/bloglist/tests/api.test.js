@@ -14,12 +14,25 @@ beforeEach(async () => {
 	await blogObject.save()
 	blogObject = new Blog(helper.initialBlogs[1])
 	await blogObject.save()
+
+	const newUser = {
+		username: 'test',
+		name: 'test',
+		password: 'password',
+	}
+
+	await api.post('/api/users').send(newUser)
+
+	const result = await api.post('api/login').send(newUser)
+
+	const headers = { Authorization: `Bearer ${result.body.token}` }
 })
 
 test('blogs are returned as json', async () => {
 	await api
 		.get('/api/blogs')
 		.expect(200)
+		.set(headers)
 		.expect('Content-Type', /application\/json/)
 })
 
