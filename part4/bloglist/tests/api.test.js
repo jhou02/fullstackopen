@@ -1,5 +1,6 @@
 const { test, after, beforeEach } = require('node:test')
 const Blog = require('../models/blog')
+const User = require('../models/user')
 const assert = require('node:assert')
 const mongoose = require('mongoose')
 const supertest = require('supertest')
@@ -8,7 +9,11 @@ const app = require('../app')
 
 const api = supertest(app)
 
+let token
+
 beforeEach(async () => {
+	await User.deleteMany({})
+
 	await Blog.deleteMany({})
 	let blogObject = new Blog(helper.initialBlogs[0])
 	await blogObject.save()
@@ -16,23 +21,23 @@ beforeEach(async () => {
 	await blogObject.save()
 
 	const newUser = {
-		username: 'test',
-		name: 'test',
+		username: 'root',
+		name: 'root',
 		password: 'password',
 	}
 
 	await api.post('/api/users').send(newUser)
 
-	const result = await api.post('api/login').send(newUser)
+	const result = await api.post('/api/login').send(newUser)
 
-	const headers = { Authorization: `Bearer ${result.body.token}` }
+	token = `Bearer ${result.body.token}`
 })
 
 test('blogs are returned as json', async () => {
 	await api
 		.get('/api/blogs')
 		.expect(200)
-		.set(headers)
+		.set('Authorization', `${token}`)
 		.expect('Content-Type', /application\/json/)
 })
 
@@ -54,6 +59,7 @@ test('a valid blog can be added ', async () => {
 		.post('/api/blogs')
 		.send(newBlog)
 		.expect(201)
+		.set('Authorization', `Bearer ${token}`)
 		.expect('Content-Type', /application\/json/)
 
 	const blogsAtEnd = await helper.blogsInDb()
@@ -80,6 +86,7 @@ test('if likes property is missing from request, default to 0', async () => {
 		.post('/api/blogs')
 		.send(newBlog)
 		.expect(201)
+		.set('Authorization', `Bearer ${token}`)
 		.expect('Content-Type', /application\/json/)
 
 	const blogsAtEnd = await helper.blogsInDb()
@@ -96,6 +103,7 @@ test('if title and url property are missing from request, response code is 400',
 	await api
 		.post('/api/blogs')
 		.send(newBlog)
+		.set('Authorization', `Bearer ${token}`)
 		.expect(400)
 		.expect('Content-Type', /application\/json/)
 
@@ -107,7 +115,10 @@ test('if title and url property are missing from request, response code is 400',
 test('deleting a valid blog', async () => {
 	const blogs = await helper.blogsInDb()
 	const blogToDelete = blogs[0]
-	await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204)
+	await api
+		.delete(`/api/blogs/${blogToDelete.id}`)
+		.set('Authorization', `Bearer ${token}`)
+		.expect(204)
 
 	const blogsAtEnd = await helper.blogsInDb()
 	assert(blogsAtEnd.length === blogs.length - 1)
@@ -125,6 +136,7 @@ test('updating a valid blog', async () => {
 	await api
 		.put(`/api/blogs/${blogToUpdate.id}`)
 		.send(update)
+		.set('Authorization', `Bearer ${token}`)
 		.expect(200)
 		.expect('Content-Type', /application\/json/)
 
