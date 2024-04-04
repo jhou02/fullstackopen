@@ -1,5 +1,6 @@
 POST http://localhost:3003/api/blogs
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1sdXVra2FpIiwiaWQiOiI2NjBmMjdjYTM4YmQwNGM5M2UxMTJkOTYiLCJpYXQiOjE3MTIyNjk4OTN9.D-ZzjC7-5M3drAJE8CJBlhrFL0PnoVlfQD-fZTu-3R8
 
 {
     "title": "Dragon Ball",

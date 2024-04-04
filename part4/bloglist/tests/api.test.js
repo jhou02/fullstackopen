@@ -30,19 +30,22 @@ beforeEach(async () => {
 
 	const result = await api.post('/api/login').send(newUser)
 
-	token = `Bearer ${result.body.token}`
+	token = `${result.body.token}`
+	console.log('token: ', token)
 })
 
 test('blogs are returned as json', async () => {
 	await api
 		.get('/api/blogs')
+		.set('Authorization', `Bearer ${token}`)
 		.expect(200)
-		.set('Authorization', `${token}`)
 		.expect('Content-Type', /application\/json/)
 })
 
 test('there are correct # of blogs', async () => {
-	const response = await api.get('/api/blogs/')
+	const response = await api
+		.get('/api/blogs/')
+		.set('Authorization', `Bearer ${token}`)
 
 	assert.strictEqual(response.body.length, helper.initialBlogs.length)
 })
@@ -58,8 +61,8 @@ test('a valid blog can be added ', async () => {
 	await api
 		.post('/api/blogs')
 		.send(newBlog)
-		.expect(201)
 		.set('Authorization', `Bearer ${token}`)
+		.expect(201)
 		.expect('Content-Type', /application\/json/)
 
 	const blogsAtEnd = await helper.blogsInDb()
@@ -85,8 +88,8 @@ test('if likes property is missing from request, default to 0', async () => {
 	await api
 		.post('/api/blogs')
 		.send(newBlog)
-		.expect(201)
 		.set('Authorization', `Bearer ${token}`)
+		.expect(201)
 		.expect('Content-Type', /application\/json/)
 
 	const blogsAtEnd = await helper.blogsInDb()
@@ -113,8 +116,24 @@ test('if title and url property are missing from request, response code is 400',
 })
 
 test('deleting a valid blog', async () => {
+	const newBlog = {
+		title: 'Jujutsu Kaisen',
+		author: 'gege',
+		url: 'xdd.com',
+		likes: '2',
+	}
+
+	await api
+		.post('/api/blogs')
+		.send(newBlog)
+		.set('Authorization', `Bearer ${token}`)
+		.expect(201)
+		.expect('Content-Type', /application\/json/)
+
 	const blogs = await helper.blogsInDb()
-	const blogToDelete = blogs[0]
+
+	const blogToDelete = blogs[2]
+
 	await api
 		.delete(`/api/blogs/${blogToDelete.id}`)
 		.set('Authorization', `Bearer ${token}`)
@@ -144,6 +163,25 @@ test('updating a valid blog', async () => {
 	const blogUpdated = blogsAtEnd[0]
 
 	assert(blogUpdated.likes === update.likes)
+})
+
+test('adding blog with no token fails', async () => {
+	const newBlog = {
+		title: 'Jujutsu Kaisen',
+		author: 'gege',
+		url: 'xdd.com',
+		likes: '2',
+	}
+
+	await api
+		.post('/api/blogs')
+		.send(newBlog)
+		.expect(401)
+		.expect('Content-Type', /application\/json/)
+
+	const blogsAtEnd = await helper.blogsInDb()
+
+	assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length)
 })
 
 after(async () => {
