@@ -13,7 +13,7 @@ blogsRouter.get('/', async (request, response) => {
 	response.json(blogs)
 })
 
-blogsRouter.post('/', async (request, response, next) => {
+blogsRouter.post('/', async (request, response) => {
 	const body = request.body
 
 	const user = request.user
@@ -37,7 +37,7 @@ blogsRouter.post('/', async (request, response, next) => {
 	response.status(201).json(savedBlog.toJSON())
 })
 
-blogsRouter.delete('/:id', async (request, response, next) => {
+blogsRouter.delete('/:id', async (request, response) => {
 	const user = request.user
 
 	const blog = await Blog.findById(request.params.id)
@@ -51,12 +51,17 @@ blogsRouter.delete('/:id', async (request, response, next) => {
 
 blogsRouter.put('/:id', async (request, response) => {
 	const body = request.body
+	const user = request.user
+	if (body.user.toString() !== user._id.toString()) {
+		return response.status(401).json({ error: 'user does not match' })
+	}
 
 	const blog = {
 		title: body.title,
 		author: body.author,
 		url: body.url,
 		likes: body.likes,
+		user: user._id.toString(),
 	}
 
 	const updatedBlog = await Blog.findByIdAndUpdate(request.params.id, blog, {

@@ -1,90 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Blog from './components/Blog'
 import Notification from './components/Notification'
+import LoginForm from './components/LoginForm'
+import BlogForm from './components/BlogForm'
+import Togglable from './components/Togglable'
 import blogService from './services/blogs'
 import loginService from './services/login'
 import './index.css'
-
-const LoginForm = ({
-	handleLogin,
-	handleUsernameChange,
-	handlePasswordChange,
-	username,
-	password,
-}) => {
-	return (
-		<>
-			<h2>Log in to application</h2>
-			<form onSubmit={handleLogin}>
-				<div>
-					username
-					<input
-						type="text"
-						value={username}
-						name="Username"
-						onChange={handleUsernameChange}
-					/>
-				</div>
-				<div>
-					password
-					<input
-						type="password"
-						value={password}
-						name="Password"
-						onChange={handlePasswordChange}
-					/>
-				</div>
-				<button type="submit">login</button>
-			</form>
-		</>
-	)
-}
-
-const BlogForm = ({ addBlog }) => {
-	const [newTitle, setNewTitle] = useState('')
-	const [newAuthor, setNewAuthor] = useState('')
-	const [newUrl, setNewUrl] = useState('')
-
-	const handleTitleChange = (event) => {
-		setNewTitle(event.target.value)
-	}
-	const handleAuthorChange = (event) => {
-		setNewAuthor(event.target.value)
-	}
-	const handleUrlChange = (event) => {
-		setNewUrl(event.target.value)
-	}
-
-	const createBlog = (event) => {
-		event.preventDefault()
-		addBlog({
-			title: newTitle,
-			author: newAuthor,
-			url: newUrl,
-		})
-		setNewTitle('')
-		setNewAuthor('')
-		setNewUrl('')
-	}
-
-	return (
-		<form onSubmit={createBlog}>
-			<div>
-				title: <input value={newTitle} onChange={handleTitleChange} />
-			</div>
-			<div>
-				author:{' '}
-				<input value={newAuthor} onChange={handleAuthorChange} />
-			</div>
-			<div>
-				url: <input value={newUrl} onChange={handleUrlChange} />
-			</div>
-			<div>
-				<button type="submit">create</button>
-			</div>
-		</form>
-	)
-}
 
 const App = () => {
 	const [blogs, setBlogs] = useState([])
@@ -93,6 +15,8 @@ const App = () => {
 	const [user, setUser] = useState(null)
 	const [message, setMessage] = useState(null)
 	const [messageType, setMessageType] = useState('success')
+
+	const blogFormRef = useRef()
 
 	useEffect(() => {
 		if (user !== null) {
@@ -120,11 +44,13 @@ const App = () => {
 
 	const getBlogs = async () => {
 		const blogs = await blogService.getAll()
+		blogs.sort((a, b) => b.likes - a.likes)
 		setBlogs(blogs)
 		console.log(blogs)
 	}
 
 	const addBlog = async (newBlog) => {
+		blogFormRef.current.toggleVisibility()
 		const addedBlog = await blogService.create(newBlog)
 		setMessage(`a new blog ${addedBlog.title} by ${addedBlog.author} added`)
 		setBlogs(blogs.concat(addedBlog))
@@ -132,6 +58,42 @@ const App = () => {
 		setTimeout(() => {
 			setMessage(null)
 		}, 5000)
+	}
+
+	const updateBlog = async (update) => {
+		try {
+			const updatedBlog = await blogService.update(update)
+			setMessage(`updated ${updatedBlog.title}`)
+			setTimeout(() => {
+				setMessage(null)
+			}, 5000)
+			getBlogs()
+		} catch (exception) {
+			setMessageType('error')
+			setMessage(`Failed to update ${update.title}`)
+			setTimeout(() => {
+				setMessage(null)
+				setMessageType('success')
+			}, 5000)
+		}
+	}
+
+	const deleteBlog = async (blogToDelete) => {
+		try {
+			if (window.confirm(`Remove ${blogToDelete.title}?`)) {
+				await blogService.remove(blogToDelete.id)
+				setMessage(`${blogToDelete.title} was successfully removed`)
+				setTimeout(() => {
+					setMessage(null)
+				}, 5000)
+				getBlogs()
+			}
+		} catch (exception) {
+			setMessage(`Failed to remove ${blogToDelete.title}`)
+			setTimeout(() => {
+				setMessage(null)
+			}, 5000)
+		}
 	}
 
 	const handleLogin = async (event) => {
@@ -192,10 +154,22 @@ const App = () => {
 				logout
 			</button>
 			<h2>create new</h2>
-			<BlogForm addBlog={addBlog} />
+			<Togglable buttonLabel="new blog" ref={blogFormRef}>
+				<BlogForm addBlog={addBlog} />
+			</Togglable>
 			<p></p>
 			{blogs.map((blog) => (
-				<Blog key={blog.id} title={blog.title} author={blog.author} />
+				<Blog
+					key={blog.id}
+					title={blog.title}
+					author={blog.author}
+					url={blog.url}
+					likes={blog.likes}
+					user={blog.user}
+					id={blog.id}
+					updateBlog={updateBlog}
+					deleteBlog={deleteBlog}
+				/>
 			))}
 		</div>
 	)
