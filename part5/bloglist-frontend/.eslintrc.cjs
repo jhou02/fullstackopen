@@ -3,6 +3,7 @@ module.exports = {
 	env: {
 		browser: true,
 		es2020: true,
+		'vitest-globals/eng': true,
 	},
 	extends: [
 		'eslint:recommended',

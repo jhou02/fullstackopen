@@ -50,7 +50,7 @@ const Blog = ({
 	}
 
 	return (
-		<div style={blogStyle}>
+		<div className="blog" style={blogStyle}>
 			<div>
 				{title} {author}{' '}
 				<button type="button" onClick={toggleVisible}>
