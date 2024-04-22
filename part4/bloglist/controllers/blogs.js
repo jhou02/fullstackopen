@@ -52,9 +52,6 @@ blogsRouter.delete('/:id', async (request, response) => {
 blogsRouter.put('/:id', async (request, response) => {
 	const body = request.body
 	const user = request.user
-	if (body.user.toString() !== user._id.toString()) {
-		return response.status(401).json({ error: 'user does not match' })
-	}
 
 	const blog = {
 		title: body.title,
